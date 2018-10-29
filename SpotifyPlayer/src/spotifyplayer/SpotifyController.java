@@ -1,0 +1,219 @@
+package spotifyplayer;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Base64;
+
+
+public class SpotifyController{
+    final static private String SPOTIFY_CLIENT_ID     = "CLIENT_ID_HERE";
+    final static private String SPOTIFY_CLIENT_SECRET = "CLIENT_SECRET_HERE";
+    
+    public static String getArtistId(String artistNameQuery)
+    {
+        String artistId = "";
+        
+        try
+        {
+            // TODO - From an artist string, get the spotify ID
+            // Recommended Endpoint: https://api.spotify.com/v1/search
+            // Parse the JSON output to retrieve the ID
+        
+            String endpoint = "https://api.spotify.com/v1/search";
+            String params = "type=artist&q=" + artistNameQuery;
+            String jsonOutput = spotifyEndpointToJson(endpoint, params);
+            
+            // ID for the beatles... replace with value from Json output
+            artistId = "3WrFJ7ztbogyGnTHbHJFl2";
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        return artistId;
+    }
+    
+    public static ArrayList<String> getAlbumIdsFromArtist(String artistId)
+    {
+        ArrayList<String> albumIds = new ArrayList<>();
+        
+        try
+        {
+            // TODO - Retrieve album ids from an artist id
+            // Recommended endpoint {id} is the id of the artist in parameter: 
+            //             https://api.spotify.com/v1/artists/{id}/albums
+            //
+            // Arguments - Filter for the CA market, and limit to 50 albums
+            
+            albumIds.add("0n9SWDBEftKwq09B01Pwzw");
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        
+        return albumIds;
+    }
+    
+    public static ArrayList<Album> getAlbumDataFromArtist(String artistId)
+    {
+        ArrayList<String> albumIds = getAlbumIdsFromArtist(artistId);
+        ArrayList<Album> albums = new ArrayList<>();
+        
+        for(String albumId : albumIds)
+        {
+            try
+            {
+                // TODO - Retrieve all album data from the list of album ids for an artist
+                // 
+                // You can have a look at the Album class included
+                // 
+                // Endpoint : https://api.spotify.com/v1/albums/{id}
+                // Note:      {id} is the id of the album
+                //
+                // Arguments - Filter for the CA market
+
+                
+                // Warning!! For the preview_url, the json item can be a string 
+                //           or null, below is the code to write for parsing
+                // 
+                //
+                //    if (item.get("preview_url").isJsonNull() == false)
+                //    {
+                //        previewUrl = item.get("preview_url").getAsString();
+                //    }
+
+                ArrayList<Track> albumTracks = new ArrayList<>();
+                
+                String artistName = "The Beatles";
+                String albumName = "Live at the Hollywood Bowl";
+                String coverURL = "https://i.scdn.co/image/94c04cbf2ea221d53c4ca2c93c8228c39945a180";
+
+                albumTracks.add(new Track(1, "Twist And Shout - Live / Remastered", 123, ""));
+                albumTracks.add(new Track(2, "Street Spirits [Radiohead, not beatles]", 123, "https://p.scdn.co/mp3-preview/204512091f67e2fb0d40b0b23c7afe2617842298?cid=cebae2ef97d645d8920cb3ff029e0549"));
+                albumTracks.add(new Track(3, "Dizzy Miss Lizzy - Live / Remastered", 123, ""));
+                albumTracks.add(new Track(4, "Ticket To Ride - Live / Remastered", 123, ""));
+                albumTracks.add(new Track(5, "Can't Buy Me Love - Live / Remastered", 123, ""));
+                albumTracks.add(new Track(6, "Things We Said Today - Live / Remastered", 123, ""));
+                albumTracks.add(new Track(7, "Roll Over Beethoven - Live / Remastered", 123, ""));
+                
+                albums.add(new Album(artistName, albumName,  coverURL, albumTracks));                
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
+            }            
+        }
+        
+        return albums;
+    }
+
+
+    // This code will help you retrieve the JSON data from a spotify end point
+    // It takes care of the complicated parts such as the authentication and 
+    // connection to the Web API
+    // 
+    // You shouldn't have to modify any of the code...
+    private static String spotifyEndpointToJson(String endpoint, String params)
+    {
+        params = params.replace(' ', '+');
+
+        try
+        {
+            String fullURL = endpoint;
+            if (params.isEmpty() == false)
+            {
+                fullURL += "?"+params;
+            }
+            
+            URL requestURL = new URL(fullURL);
+            
+            HttpURLConnection connection = (HttpURLConnection)requestURL.openConnection();
+            String bearerAuth = "Bearer " + getSpotifyAccessToken();
+            connection.setRequestProperty ("Authorization", bearerAuth);
+            connection.setRequestMethod("GET");
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+            String inputLine;
+            String jsonOutput = "";
+            while((inputLine = in.readLine()) != null)
+            {
+                jsonOutput += inputLine;
+            }
+            in.close();
+            
+            return jsonOutput;
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        
+        return "";
+    }
+
+
+    // This implements the Client Credentials Authorization Flows
+    // Based on the Spotify API documentation
+    // 
+    // It retrieves the Access Token based on the client ID and client Secret  
+    //
+    // You shouldn't have to modify any of this code...          
+    private static String getSpotifyAccessToken()
+    {
+        try
+        {
+            URL requestURL = new URL("https://accounts.spotify.com/api/token");
+            
+            HttpURLConnection connection = (HttpURLConnection)requestURL.openConnection();
+            String keys = SPOTIFY_CLIENT_ID+":"+SPOTIFY_CLIENT_SECRET;
+            String postData = "grant_type=client_credentials";
+            
+            String basicAuth = "Basic " + new String(Base64.getEncoder().encode(keys.getBytes()));
+            
+            // Send header parameter
+            connection.setRequestProperty ("Authorization", basicAuth);
+            
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+
+            // Send body parameters
+            OutputStream os = connection.getOutputStream();
+            os.write( postData.getBytes() );
+            os.close();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            
+            String inputLine;
+            String jsonOutput = "";
+            while((inputLine = in.readLine()) != null)
+            {
+                jsonOutput += inputLine;
+            }
+            in.close();
+            
+            JsonElement jelement = new JsonParser().parse(jsonOutput);
+            JsonObject rootObject = jelement.getAsJsonObject();
+            String token = rootObject.get("access_token").getAsString();
+
+            return token;
+        }
+        catch(Exception e)
+        {
+            System.out.println("Something wrong here... make sure you set your Client ID and Client Secret properly!");
+            e.printStackTrace();
+        }
+        
+        return "";
+    }
+}

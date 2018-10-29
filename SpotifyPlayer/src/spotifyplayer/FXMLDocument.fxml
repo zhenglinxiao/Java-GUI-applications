@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.image.*?>
+<?import javafx.scene.text.*?>
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane id="AnchorPane" prefHeight="426.0" prefWidth="629.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="spotifyplayer.FXMLDocumentController">
+    <children>
+      <Slider fx:id="trackSlider" disable="true" layoutX="77.0" layoutY="392.0" max="30.0" prefHeight="14.0" prefWidth="458.0" />
+      <ImageView fx:id="albumCoverImageView" fitHeight="256.0" fitWidth="256.0" layoutX="14.0" layoutY="117.0" pickOnBounds="true" preserveRatio="true" />
+      <TableView fx:id="tracksTableView" layoutX="277.0" layoutY="149.0" prefHeight="224.0" prefWidth="342.0">
+        <columns>
+          <TableColumn prefWidth="28.0" text="#" />
+          <TableColumn prefWidth="313.0" text="Title" />
+        </columns>
+      </TableView>
+      <ProgressIndicator fx:id="progress" layoutX="513.0" layoutY="23.0" prefHeight="77.0" prefWidth="99.0" visible="false" />
+    </children>
+</AnchorPane>
