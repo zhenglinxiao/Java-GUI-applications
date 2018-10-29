@@ -215,7 +215,7 @@ public class FXMLDocumentController implements Initializable {
         });
         
         // Initialize GUI
-        searchAlbumsFromArtist("pink floyd");
+        searchAlbumsFromArtist("daniel caesar");
         displayAlbum(0);
     }        
 }

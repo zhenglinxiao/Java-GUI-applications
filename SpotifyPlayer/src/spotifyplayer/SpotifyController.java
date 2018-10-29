@@ -14,8 +14,8 @@ import java.util.Base64;
 
 
 public class SpotifyController{
-    final static private String SPOTIFY_CLIENT_ID     = "CLIENT_ID_HERE";
-    final static private String SPOTIFY_CLIENT_SECRET = "CLIENT_SECRET_HERE";
+    final static private String SPOTIFY_CLIENT_ID     = "c57cfc910044475ea429a1033ea51a9e"; // Dummy account
+    final static private String SPOTIFY_CLIENT_SECRET = "2c02603fbff749948a2bbc758ac46d7c";
     
     public static String getArtistId(String artistNameQuery)
     {
@@ -31,8 +31,12 @@ public class SpotifyController{
             String params = "type=artist&q=" + artistNameQuery;
             String jsonOutput = spotifyEndpointToJson(endpoint, params);
             
-            // ID for the beatles... replace with value from Json output
-            artistId = "3WrFJ7ztbogyGnTHbHJFl2";
+            JsonObject root = new JsonParser().parse(jsonOutput).getAsJsonObject();
+            JsonObject artist = root.get("artists").getAsJsonObject();
+            JsonArray items = artist.get("items").getAsJsonArray();
+            JsonObject items2 = items.get(0).getAsJsonObject();
+            
+            artistId = items2.get("id").toString().replaceAll("\"", "");;
         }
         catch(Exception e)
         {
@@ -54,7 +58,18 @@ public class SpotifyController{
             //
             // Arguments - Filter for the CA market, and limit to 50 albums
             
-            albumIds.add("0n9SWDBEftKwq09B01Pwzw");
+        String endpoint = "https://api.spotify.com/v1/artists/" + artistId + "/albums";
+        String jsonOutput = spotifyEndpointToJson(endpoint, "");
+        JsonObject albums = new JsonParser().parse(jsonOutput).getAsJsonObject();
+        JsonArray items = albums.get("items").getAsJsonArray();
+        
+        for (int i = 0; i < items.size() ; i++) {
+            JsonObject currentAlbum = items.get(i).getAsJsonObject();
+            String id = currentAlbum.get("id").toString().replaceAll("\"", "");
+            
+            albumIds.add(id);
+        }
+        
         }
         catch(Exception e)
         {
@@ -91,21 +106,50 @@ public class SpotifyController{
                 //    {
                 //        previewUrl = item.get("preview_url").getAsString();
                 //    }
+                
+                String endpoint = "https://api.spotify.com/v1/albums/" + albumId;
+//                String params = "/search?market=CA"; //?? filter in finding album ids? or filter the songs?
+                String jsonOutput = spotifyEndpointToJson(endpoint, "");
+                
+                JsonObject albumJson = new JsonParser().parse(jsonOutput).getAsJsonObject();
+                
+                // Artist Name
+                JsonArray artists = albumJson.get("artists").getAsJsonArray();
+                String artistName = "";
+                
+                for (int i = 0; i < artists.size(); i++) {
+                    JsonObject artist = artists.get(i).getAsJsonObject();
+                    artistName += artist.get("name").toString().replaceAll("\"", "");
+                    
+                    if(i != artist.size() - 1){
+                        artistName += ", ";
+                    }
+                }
 
+                // Album Name
+                String albumName = albumJson.get("name").toString().replaceAll("\"", "");
+                
+                // Cover image
+                JsonArray images = albumJson.getAsJsonArray("images");
+                JsonObject middleCover = images.get(2).getAsJsonObject();
+                String coverURL = middleCover.get("url").toString().replaceAll("\"", "");
+
+                // Album tracks
+                    //int trackNumber = albumJson.get("total_tracks").getAsInt();
+                JsonObject tracksInfo = albumJson.get("tracks").getAsJsonObject();
+                JsonArray tracks = tracksInfo.get("items").getAsJsonArray();
                 ArrayList<Track> albumTracks = new ArrayList<>();
                 
-                String artistName = "The Beatles";
-                String albumName = "Live at the Hollywood Bowl";
-                String coverURL = "https://i.scdn.co/image/94c04cbf2ea221d53c4ca2c93c8228c39945a180";
+                for (int i = 0; i < tracks.size(); i++) {
+                    JsonObject trackInfo = tracks.get(i).getAsJsonObject();
+                    int trackNumber = trackInfo.get("track_number").getAsInt();
+                    String trackTitle = trackInfo.get("name").toString().replaceAll("\"", "");
+                    int trackDuration = trackInfo.get("duration_ms").getAsInt();
+                    String trackUrl = trackInfo.get("preview_url").toString().replaceAll("\"", ""); // only the preview
+                    
+                    albumTracks.add(new Track(trackNumber, trackTitle, trackDuration, trackUrl));
+                }
 
-                albumTracks.add(new Track(1, "Twist And Shout - Live / Remastered", 123, ""));
-                albumTracks.add(new Track(2, "Street Spirits [Radiohead, not beatles]", 123, "https://p.scdn.co/mp3-preview/204512091f67e2fb0d40b0b23c7afe2617842298?cid=cebae2ef97d645d8920cb3ff029e0549"));
-                albumTracks.add(new Track(3, "Dizzy Miss Lizzy - Live / Remastered", 123, ""));
-                albumTracks.add(new Track(4, "Ticket To Ride - Live / Remastered", 123, ""));
-                albumTracks.add(new Track(5, "Can't Buy Me Love - Live / Remastered", 123, ""));
-                albumTracks.add(new Track(6, "Things We Said Today - Live / Remastered", 123, ""));
-                albumTracks.add(new Track(7, "Roll Over Beethoven - Live / Remastered", 123, ""));
-                
                 albums.add(new Album(artistName, albumName,  coverURL, albumTracks));                
             }
             catch(Exception e)
