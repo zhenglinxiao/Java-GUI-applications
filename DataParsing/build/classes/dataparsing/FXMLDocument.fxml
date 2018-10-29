@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane id="AnchorPane" prefHeight="466.0" prefWidth="448.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/10.0.1" fx:controller="dataparsing.FXMLDocumentController">
+    <children>
+        <Button fx:id="retrieveBtn" layoutX="189.0" layoutY="426.0" onAction="#handleButtonAction" text="Load Data" />
+      <VBox layoutX="14.0" layoutY="13.0" prefHeight="398.0" prefWidth="419.0">
+         <children>
+            <Label fx:id="firstNameLabel" prefHeight="41.0" prefWidth="376.0" text="First Name: " />
+            <Label fx:id="lastNameLabel" prefHeight="39.0" prefWidth="376.0" text="Last Name:" />
+            <Label fx:id="ageLabel" prefHeight="40.0" prefWidth="376.0" text="Age: " />
+            <Label fx:id="addressLabel" prefHeight="39.0" prefWidth="376.0" text="Address:" />
+            <Label fx:id="cityLabel" prefHeight="36.0" prefWidth="376.0" text="City:" />
+            <Label fx:id="stateLabel" prefHeight="39.0" prefWidth="376.0" text="State:" />
+            <Label fx:id="postalLabel" layoutX="10.0" layoutY="206.0" prefHeight="39.0" prefWidth="376.0" text="Postal Code:" />
+            <Label fx:id="homeLabel" layoutX="10.0" layoutY="245.0" prefHeight="39.0" prefWidth="376.0" text="Home Number:" />
+            <Label fx:id="faxLabel" layoutX="10.0" layoutY="285.0" prefHeight="39.0" prefWidth="376.0" text="Fax Number:" />
+            <Label fx:id="genderLabel" layoutX="10.0" layoutY="324.0" prefHeight="39.0" prefWidth="376.0" text="Gender:" />
+         </children>
+      </VBox>
+    </children>
+</AnchorPane>
