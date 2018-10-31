@@ -7,6 +7,7 @@ package spotifyplayer;
 
 import com.sun.javafx.collections.ObservableListWrapper;
 import java.awt.Image;
+import java.awt.event.KeyListener;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
@@ -15,40 +16,78 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Slider;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Callback;
 import javafx.util.Duration;
 
-/**
- *
- * @author bergeron
- */
+
 public class FXMLDocumentController implements Initializable {
     @FXML
     TableView tracksTableView;
     
     @FXML
     Slider trackSlider;
-
+    
+    @FXML
+    Label artistLabel;
+    
+    @FXML
+    Label albumLabel;
+    
+    @FXML
+    Label songLengthLabel;
+    
+    @FXML
+    Label songTimeLabel;
+    
+    @FXML
+    TextField searchField;
+    
+    @FXML
+    Button playButton;
+    
+    @FXML
+    Button previousAlbumButton;
+    
+    @FXML
+    Button nextAlbumButton;        
+    
     // Other Fields...
     ScheduledExecutorService sliderExecutor = null;
     MediaPlayer mediaPlayer = null;
     
     ArrayList<Album> albums = null;
     int currentAlbumIndex = 0;
+    int albumDisplayed = 0;
     
-
+    
+    public void shutdown(){
+        if(sliderExecutor != null){
+            sliderExecutor.shutdown();
+        }
+        Platform.exit();
+    }
+    
+    @FXML
+    private void nextAlbum(ActionEvent event){
+        displayAlbum(++albumDisplayed);
+    }
+    
+    @FXML
+    private void previousAlbum(ActionEvent event){
+        displayAlbum(--albumDisplayed);
+    }
+    
+    @FXML
+    private void search(){}//for when enter is pressed
 
     private void playPauseTrackPreview( Button source, String trackPreviewUrl)
     {
@@ -216,6 +255,6 @@ public class FXMLDocumentController implements Initializable {
         
         // Initialize GUI
         searchAlbumsFromArtist("daniel caesar");
-        displayAlbum(0);
+        displayAlbum(albumDisplayed);
     }        
 }
