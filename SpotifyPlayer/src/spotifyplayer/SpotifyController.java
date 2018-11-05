@@ -30,13 +30,18 @@ public class SpotifyController{
             String endpoint = "https://api.spotify.com/v1/search";
             String params = "type=artist&q=" + artistNameQuery;
             String jsonOutput = spotifyEndpointToJson(endpoint, params);
-            
+                        
             JsonObject root = new JsonParser().parse(jsonOutput).getAsJsonObject();
             JsonObject artist = root.get("artists").getAsJsonObject();
             JsonArray items = artist.get("items").getAsJsonArray();
-            JsonObject items2 = items.get(0).getAsJsonObject();
             
-            artistId = items2.get("id").toString().replaceAll("\"", "");;
+            if(items.size() == 0){
+                return null;
+            }
+            
+            JsonObject items2 = items.get(0).getAsJsonObject();
+
+            artistId = items2.get("id").toString().replaceAll("\"", "");
         }
         catch(Exception e)
         {
@@ -48,8 +53,12 @@ public class SpotifyController{
     
     public static ArrayList<String> getAlbumIdsFromArtist(String artistId)
     {
-        ArrayList<String> albumIds = new ArrayList<>();
+        if(artistId == null){
+            return null;
+        }
         
+        ArrayList<String> albumIds = new ArrayList<>();
+ 
         try
         {
             // TODO - Retrieve album ids from an artist id
@@ -58,17 +67,17 @@ public class SpotifyController{
             //
             // Arguments - Filter for the CA market, and limit to 50 albums
             
-        String endpoint = "https://api.spotify.com/v1/artists/" + artistId + "/albums";
-        String jsonOutput = spotifyEndpointToJson(endpoint, "");
-        JsonObject albums = new JsonParser().parse(jsonOutput).getAsJsonObject();
-        JsonArray items = albums.get("items").getAsJsonArray();
-        
-        for (int i = 0; i < items.size() ; i++) {
-            JsonObject currentAlbum = items.get(i).getAsJsonObject();
-            String id = currentAlbum.get("id").toString().replaceAll("\"", "");
-            
-            albumIds.add(id);
-        }
+            String endpoint = "https://api.spotify.com/v1/artists/" + artistId + "/albums";
+            String jsonOutput = spotifyEndpointToJson(endpoint, "");
+            JsonObject albums = new JsonParser().parse(jsonOutput).getAsJsonObject();
+            JsonArray items = albums.get("items").getAsJsonArray();
+
+            for (int i = 0; i < items.size() ; i++) {
+                JsonObject currentAlbum = items.get(i).getAsJsonObject();
+                String id = currentAlbum.get("id").toString().replaceAll("\"", "");
+
+                albumIds.add(id);
+            }
         
         }
         catch(Exception e)
@@ -81,6 +90,10 @@ public class SpotifyController{
     
     public static ArrayList<Album> getAlbumDataFromArtist(String artistId)
     {
+        if(artistId == null){
+            return null;
+        }
+        
         ArrayList<String> albumIds = getAlbumIdsFromArtist(artistId);
         ArrayList<Album> albums = new ArrayList<>();
         
@@ -115,24 +128,16 @@ public class SpotifyController{
                 
                 // Artist Name
                 JsonArray artists = albumJson.get("artists").getAsJsonArray();
-                String artistName = "";
-                
-                for (int i = 0; i < artists.size(); i++) {
-                    JsonObject artist = artists.get(i).getAsJsonObject();
-                    artistName += artist.get("name").toString().replaceAll("\"", "");
-                    
-                    if(i != artist.size() - 1){
-                        artistName += ", ";
-                    }
-                }
+                JsonObject artist = artists.get(0).getAsJsonObject();
+                String artistName = artist.get("name").toString().replaceAll("\"", "");
 
                 // Album Name
                 String albumName = albumJson.get("name").toString().replaceAll("\"", "");
                 
                 // Cover image
                 JsonArray images = albumJson.getAsJsonArray("images");
-                JsonObject middleCover = images.get(2).getAsJsonObject();
-                String coverURL = middleCover.get("url").toString().replaceAll("\"", "");
+                JsonObject bigCover = images.get(0).getAsJsonObject();
+                String coverURL = bigCover.get("url").toString().replaceAll("\"", "");
 
                 // Album tracks
                     //int trackNumber = albumJson.get("total_tracks").getAsInt();

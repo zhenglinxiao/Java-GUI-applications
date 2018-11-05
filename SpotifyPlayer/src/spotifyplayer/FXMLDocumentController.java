@@ -6,8 +6,6 @@
 package spotifyplayer;
 
 import com.sun.javafx.collections.ObservableListWrapper;
-import java.awt.Image;
-import java.awt.event.KeyListener;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
@@ -23,6 +21,10 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Callback;
@@ -58,7 +60,13 @@ public class FXMLDocumentController implements Initializable {
     Button previousAlbumButton;
     
     @FXML
-    Button nextAlbumButton;        
+    Button nextAlbumButton;
+    
+    @FXML
+    ImageView albumCover;
+    
+    @FXML 
+    ProgressIndicator progress;
     
     // Other Fields...
     ScheduledExecutorService sliderExecutor = null;
@@ -66,7 +74,6 @@ public class FXMLDocumentController implements Initializable {
     
     ArrayList<Album> albums = null;
     int currentAlbumIndex = 0;
-    int albumDisplayed = 0;
     
     
     public void shutdown(){
@@ -77,17 +84,50 @@ public class FXMLDocumentController implements Initializable {
     }
     
     @FXML
+    private void onEnter(KeyEvent ke){
+        if(ke.getCode().equals(KeyCode.ENTER) && searchField.isFocused()){
+            // Search artist
+            progress.setVisible(true);
+            progress.setProgress(-1.0d);
+            sliderExecutor = Executors.newSingleThreadScheduledExecutor();
+            sliderExecutor.submit(new Task<Void>(){
+                @Override
+                protected Void call() throws Exception {
+                    searchAlbumsFromArtist(searchField.getText());
+                    return null;
+                }
+                @Override
+                protected void succeeded(){
+                    try{
+                        displayAlbum(currentAlbumIndex);
+                    }
+                    catch(Exception e){
+                        artistLabel.setText("Error!");
+                        albumLabel.setText("Invalid artist.");
+                        progress.setProgress(1d);
+                    }
+                    
+                }
+                @Override
+                protected void cancelled(){
+                    albumLabel.setText("Error");
+                    artistLabel.setText("Searching failed.");
+                    progress.setProgress(0d);
+                }
+            });
+            
+        }
+    }
+    
+    @FXML
     private void nextAlbum(ActionEvent event){
-        displayAlbum(++albumDisplayed);
+        displayAlbum(++currentAlbumIndex);
     }
     
     @FXML
     private void previousAlbum(ActionEvent event){
-        displayAlbum(--albumDisplayed);
+        displayAlbum(--currentAlbumIndex);
     }
-    
-    @FXML
-    private void search(){}//for when enter is pressed
 
     private void playPauseTrackPreview( Button source, String trackPreviewUrl)
     {
@@ -156,21 +196,32 @@ public class FXMLDocumentController implements Initializable {
         }
     }
     
+    
     private void displayAlbum(int albumNumber)
-    {
-        // TODO - Display all the informations about the album
-        //
-        //        Artist Name 
-        //        Album Name
-        //        Album Cover Image
-        //        Enable next/previous album buttons, if there is more than one album
-        
-        
+    {   
         // Display Tracks for the album passed as parameter
         if (albumNumber >=0 && albumNumber < albums.size())
         {
             currentAlbumIndex = albumNumber;
             Album album = albums.get(albumNumber);
+            
+            artistLabel.setText(album.getArtistName());
+            albumLabel.setText(album.getAlbumName());
+            albumCover.setImage(new Image(album.getImageURL()));
+            if(albums.size() > 1){
+                if(albumNumber == albums.size() - 1){
+                    nextAlbumButton.setDisable(true);
+                    previousAlbumButton.setDisable(false);
+                }
+                else if(albumNumber == 0){
+                    nextAlbumButton.setDisable(false);
+                    previousAlbumButton.setDisable(true);
+                }
+                else{
+                    nextAlbumButton.setDisable(false);
+                    previousAlbumButton.setDisable(false);
+                }
+            }
             
             // Set tracks
             ArrayList<TrackForTableView> tracks = new ArrayList<>();
@@ -193,9 +244,18 @@ public class FXMLDocumentController implements Initializable {
     private void searchAlbumsFromArtist(String artistName)
     {
         // TODO - Make sure this is not blocking the UI
+        
         currentAlbumIndex = 0;
-        String artistId = SpotifyController.getArtistId(artistName);
-        albums = SpotifyController.getAlbumDataFromArtist(artistId);        
+        try{
+            String artistId = SpotifyController.getArtistId(artistName);
+            albums = SpotifyController.getAlbumDataFromArtist(artistId);   
+//            displayAlbum(currentAlbumIndex);
+        }
+        catch(Exception e){
+            artistLabel.setText("Error!");
+            albumLabel.setText("Invalid artist.");
+        }
+       
     }
     
     
@@ -205,10 +265,11 @@ public class FXMLDocumentController implements Initializable {
         // Setup Table View
         TableColumn<TrackForTableView, Number> trackNumberColumn = new TableColumn("#");
         trackNumberColumn.setCellValueFactory(new PropertyValueFactory("trackNumber"));
+        trackNumberColumn.setPrefWidth(28);
         
         TableColumn trackTitleColumn = new TableColumn("Title");
         trackTitleColumn.setCellValueFactory(new PropertyValueFactory("trackTitle"));
-        trackTitleColumn.setPrefWidth(250);
+        trackTitleColumn.setPrefWidth(220);
         
         TableColumn playColumn = new TableColumn("Preview");
         playColumn.setCellValueFactory(new PropertyValueFactory("trackPreviewUrl"));
@@ -253,8 +314,5 @@ public class FXMLDocumentController implements Initializable {
             }
         });
         
-        // Initialize GUI
-        searchAlbumsFromArtist("daniel caesar");
-        displayAlbum(albumDisplayed);
     }        
 }
