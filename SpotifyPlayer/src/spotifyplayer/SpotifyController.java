@@ -88,6 +88,38 @@ public class SpotifyController{
         return albumIds;
     }
     
+    public static String getFirstAlbumIdFromArtist(String artistId)
+    {
+        if(artistId == null){
+            return null;
+        }
+        
+        String id = "";
+        try
+        {
+            // TODO - Retrieve album ids from an artist id
+            // Recommended endpoint {id} is the id of the artist in parameter: 
+            //             https://api.spotify.com/v1/artists/{id}/albums
+            //
+            // Arguments - Filter for the CA market, and limit to 50 albums
+            
+            String endpoint = "https://api.spotify.com/v1/artists/" + artistId + "/albums";
+            String jsonOutput = spotifyEndpointToJson(endpoint, "");
+            JsonObject albums = new JsonParser().parse(jsonOutput).getAsJsonObject();
+            JsonArray items = albums.get("items").getAsJsonArray();
+
+            
+            JsonObject currentAlbum = items.get(0).getAsJsonObject();
+            id = currentAlbum.get("id").toString().replaceAll("\"", "");
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        
+        return id;
+    }
+    
     public static ArrayList<Album> getAlbumDataFromArtist(String artistId)
     {
         if(artistId == null){
@@ -162,6 +194,83 @@ public class SpotifyController{
                 e.printStackTrace();
             }            
         }
+        
+        return albums;
+    }
+    
+    public static ArrayList<Album> getFirstAlbumDataFromArtist(String artistId)
+    {
+        if(artistId == null){
+            return null;
+        }
+        
+        String albumId = getFirstAlbumIdFromArtist(artistId);
+        ArrayList<Album> albums = new ArrayList<>();
+        
+
+            try
+            {
+                // TODO - Retrieve all album data from the list of album ids for an artist
+                // 
+                // You can have a look at the Album class included
+                // 
+                // Endpoint : https://api.spotify.com/v1/albums/{id}
+                // Note:      {id} is the id of the album
+                //
+                // Arguments - Filter for the CA market
+
+                
+                // Warning!! For the preview_url, the json item can be a string 
+                //           or null, below is the code to write for parsing
+                // 
+                //
+                //    if (item.get("preview_url").isJsonNull() == false)
+                //    {
+                //        previewUrl = item.get("preview_url").getAsString();
+                //    }
+                
+                String endpoint = "https://api.spotify.com/v1/albums/" + albumId;
+//                String params = "/search?market=CA"; //?? filter in finding album ids? or filter the songs?
+                String jsonOutput = spotifyEndpointToJson(endpoint, "");
+                
+                JsonObject albumJson = new JsonParser().parse(jsonOutput).getAsJsonObject();
+                
+                // Artist Name
+                JsonArray artists = albumJson.get("artists").getAsJsonArray();
+                JsonObject artist = artists.get(0).getAsJsonObject();
+                String artistName = artist.get("name").toString().replaceAll("\"", "");
+
+                // Album Name
+                String albumName = albumJson.get("name").toString().replaceAll("\"", "");
+                
+                // Cover image
+                JsonArray images = albumJson.getAsJsonArray("images");
+                JsonObject bigCover = images.get(0).getAsJsonObject();
+                String coverURL = bigCover.get("url").toString().replaceAll("\"", "");
+
+                // Album tracks
+                    //int trackNumber = albumJson.get("total_tracks").getAsInt();
+                JsonObject tracksInfo = albumJson.get("tracks").getAsJsonObject();
+                JsonArray tracks = tracksInfo.get("items").getAsJsonArray();
+                ArrayList<Track> albumTracks = new ArrayList<>();
+                
+                for (int i = 0; i < tracks.size(); i++) {
+                    JsonObject trackInfo = tracks.get(i).getAsJsonObject();
+                    int trackNumber = trackInfo.get("track_number").getAsInt();
+                    String trackTitle = trackInfo.get("name").toString().replaceAll("\"", "");
+                    int trackDuration = trackInfo.get("duration_ms").getAsInt();
+                    String trackUrl = trackInfo.get("preview_url").toString().replaceAll("\"", ""); // only the preview
+                    
+                    albumTracks.add(new Track(trackNumber, trackTitle, trackDuration, trackUrl));
+                }
+
+                albums.add(new Album(artistName, albumName,  coverURL, albumTracks));                
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
+            }            
+        
         
         return albums;
     }

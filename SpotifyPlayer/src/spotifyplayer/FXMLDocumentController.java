@@ -70,7 +70,11 @@ public class FXMLDocumentController implements Initializable {
     
     // Other Fields...
     ScheduledExecutorService sliderExecutor = null;
+    ScheduledExecutorService progressExecutor = null;
+    ScheduledExecutorService firstAlbumExecutor = null;
     MediaPlayer mediaPlayer = null;
+    boolean isSliderAnimationActive = false;
+    Button lastPlayButtonPressed = null;
     
     ArrayList<Album> albums = null;
     int currentAlbumIndex = 0;
@@ -78,6 +82,8 @@ public class FXMLDocumentController implements Initializable {
     
     public void shutdown(){
         if(sliderExecutor != null){
+            if(progressExecutor != null)
+                progressExecutor.shutdown();            
             sliderExecutor.shutdown();
         }
         Platform.exit();
@@ -89,22 +95,29 @@ public class FXMLDocumentController implements Initializable {
             // Search artist
             progress.setVisible(true);
             progress.setProgress(-1.0d);
-            sliderExecutor = Executors.newSingleThreadScheduledExecutor();
-            sliderExecutor.submit(new Task<Void>(){
+            
+            
+            
+            progressExecutor.submit(new Task<Void>(){
                 @Override
                 protected Void call() throws Exception {
-                    searchAlbumsFromArtist(searchField.getText());
+                    searchAlbumsFromArtist(searchField.getText());// find first album
                     return null;
                 }
                 @Override
                 protected void succeeded(){
                     try{
                         displayAlbum(currentAlbumIndex);
+                        progress.setProgress(1d);
                     }
                     catch(Exception e){
                         artistLabel.setText("Error!");
                         albumLabel.setText("Invalid artist.");
-                        progress.setProgress(1d);
+                        progress.setVisible(false);
+                        
+                        // Reset table to no content
+                            // Would need to initialize the columns as class objects cus they are unreachable from here right now.
+                        
                     }
                     
                 }
@@ -112,7 +125,7 @@ public class FXMLDocumentController implements Initializable {
                 protected void cancelled(){
                     albumLabel.setText("Error");
                     artistLabel.setText("Searching failed.");
-                    progress.setProgress(0d);
+                    progress.setVisible(false); 
                 }
             });
             
@@ -128,81 +141,68 @@ public class FXMLDocumentController implements Initializable {
     private void previousAlbum(ActionEvent event){
         displayAlbum(--currentAlbumIndex);
     }
-
-    private void playPauseTrackPreview( Button source, String trackPreviewUrl)
-    {
-        try
-        {
-            if (source.getText().equals("Play"))
-            {
-                if (mediaPlayer != null)
-                {
-                    mediaPlayer.stop();                
-                }
-
-                source.setText("Stop");
-                trackSlider.setDisable(false);
-                trackSlider.setValue(0.0);
-
-                // Start playing music
-                Media music = new Media(trackPreviewUrl);
-                mediaPlayer = new MediaPlayer(music);
-                mediaPlayer.play();
-                
-                
-                // This runnable object will be called
-                // when the track is finished or stopped
-                Runnable stopTrackRunnable = new Runnable(){
-                    @Override
-                    public void run() {
-                        source.setText("Play");
-                        if (sliderExecutor != null)
-                        {
-                            sliderExecutor.shutdownNow();
-                        }
-                    }                
-                };                
-                mediaPlayer.setOnEndOfMedia(stopTrackRunnable);
-                mediaPlayer.setOnStopped(stopTrackRunnable);
-
-                // Schedule the slider to move right every second
-                sliderExecutor = Executors.newSingleThreadScheduledExecutor();
-                sliderExecutor.scheduleAtFixedRate(new Runnable(){
-                    @Override
-                    public void run() {
-                        // We can't update the GUI elements on a separate thread... 
-                        // Let's call Platform.runLater to do it in main thread!!
-                        Platform.runLater(new Runnable(){
-                            @Override
-                            public void run() {
-                                // Move slider
-                                trackSlider.setValue(trackSlider.getValue() + 1.0);
-                            }
-                        });
-                    }
-                }, 1, 1, TimeUnit.SECONDS);
-            }
-            else
-            {
-                if (mediaPlayer != null)
-                {
-                    mediaPlayer.stop();
-                }                
-            }
+    
+    private void startMusic(String url){ 
+        lastPlayButtonPressed.setText("Pause");
+        trackSlider.setDisable(false);
+        
+        if(mediaPlayer != null){
+            stopMusic();
         }
-        catch(Exception e)
-        {
-            System.err.println("error with slider executor... this should not happen!");
+        
+        mediaPlayer = new MediaPlayer(new Media(url));
+        mediaPlayer.setOnReady(() -> {
+            mediaPlayer.play();
+            isSliderAnimationActive = true;
+            trackSlider.setValue(0);
+            trackSlider.setMax(30.0);
+            
+            mediaPlayer.setOnEndOfMedia(() ->{
+                mediaPlayer.pause();
+                mediaPlayer.seek(Duration.ZERO);
+                
+                isSliderAnimationActive = false;
+                trackSlider.setValue(0);
+            });
+        });
+    }
+
+    public void stopMusic(){
+        if(mediaPlayer != null){
+            mediaPlayer.stop();
+            mediaPlayer.dispose();
         }
     }
     
+    public void playPauseMusic(){
+        try{
+            if(lastPlayButtonPressed != null && lastPlayButtonPressed.getText().equals("Play")){
+                lastPlayButtonPressed.setText("Pause");
+                
+                if(mediaPlayer != null){
+                    mediaPlayer.play();
+                }
+                trackSlider.setValue(mediaPlayer.getCurrentTime().toSeconds());
+                isSliderAnimationActive = true;
+            }
+            else{
+                lastPlayButtonPressed.setText("Play");
+                if(mediaPlayer != null){
+                    mediaPlayer.pause();
+                }
+                isSliderAnimationActive = false;
+            }
+        }
+        catch(Exception e){
+            System.out.println("Error playing/pausing song...");
+        }
+    }   
     
     private void displayAlbum(int albumNumber)
     {   
         // Display Tracks for the album passed as parameter
         if (albumNumber >=0 && albumNumber < albums.size())
         {
-            currentAlbumIndex = albumNumber;
             Album album = albums.get(albumNumber);
             
             artistLabel.setText(album.getArtistName());
@@ -249,7 +249,22 @@ public class FXMLDocumentController implements Initializable {
         try{
             String artistId = SpotifyController.getArtistId(artistName);
             albums = SpotifyController.getAlbumDataFromArtist(artistId);   
-//            displayAlbum(currentAlbumIndex);
+        }
+        catch(Exception e){
+            artistLabel.setText("Error!");
+            albumLabel.setText("Invalid artist.");
+        }
+       
+    }
+    
+     private void searchFirstAlbumFromArtist(String artistName)
+    {
+        // TODO - Make sure this is not blocking the UI
+        
+        currentAlbumIndex = 0;
+        try{
+            String artistId = SpotifyController.getArtistId(artistName);
+            albums = SpotifyController.getFirstAlbumDataFromArtist(artistId);   
         }
         catch(Exception e){
             artistLabel.setText("Error!");
@@ -284,9 +299,18 @@ public class FXMLDocumentController implements Initializable {
                     {
                         if (item != null && item.equals("") == false){
                             playButton.setOnAction(event -> {
-                                playPauseTrackPreview(playButton, item);
+                                if(playButton.getText().equals("Pause") || (mediaPlayer != null && mediaPlayer.getMedia().getSource().equals(item))){
+                                    playPauseMusic();
+                                }
+                                else{
+                                    if(lastPlayButtonPressed != null){
+                                        lastPlayButtonPressed.setText("Play");
+                                    }
+                                    lastPlayButtonPressed = playButton;
+                                    startMusic(item);
+                                }
                             });
-    
+                            
                             setGraphic(playButton);
                         }
                         else{                        
@@ -314,5 +338,26 @@ public class FXMLDocumentController implements Initializable {
             }
         });
         
+        // Schedule the slider to move right every second
+        sliderExecutor = Executors.newSingleThreadScheduledExecutor();
+        sliderExecutor.scheduleAtFixedRate(new Runnable(){
+            @Override
+            public void run() {
+                // We can't update the GUI elements on a separate thread... 
+                // Let's call Platform.runLater to do it in main thread!!
+                Platform.runLater(new Runnable(){
+                    @Override
+                    public void run() {
+                        // Move slider
+                        if(isSliderAnimationActive){
+                            trackSlider.setValue(trackSlider.getValue() + 1.0);
+                        }
+                    }
+                });
+            }
+        }, 1, 1, TimeUnit.SECONDS);
+        
+        firstAlbumExecutor = Executors.newSingleThreadScheduledExecutor(); 
+        progressExecutor = Executors.newSingleThreadScheduledExecutor();    
     }        
 }
