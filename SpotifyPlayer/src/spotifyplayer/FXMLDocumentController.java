@@ -82,8 +82,10 @@ public class FXMLDocumentController implements Initializable {
     
     public void shutdown(){
         if(sliderExecutor != null){
-            if(progressExecutor != null)
-                progressExecutor.shutdown();            
+            if(progressExecutor != null || firstAlbumExecutor != null){
+                progressExecutor.shutdown(); 
+                firstAlbumExecutor.shutdown();
+            }
             sliderExecutor.shutdown();
         }
         Platform.exit();
@@ -96,7 +98,35 @@ public class FXMLDocumentController implements Initializable {
             progress.setVisible(true);
             progress.setProgress(-1.0d);
             
-            
+            firstAlbumExecutor.submit(new Task<Void>(){
+                @Override
+                protected Void call() throws Exception {
+                    searchFirstAlbumFromArtist(searchField.getText());
+                    return null;
+                }
+                
+                @Override
+                protected void succeeded(){
+                    try{
+                        displayAlbum(currentAlbumIndex);
+                    }
+                    catch(Exception e){
+                        artistLabel.setText("Error!");
+                        albumLabel.setText("Invalid artist.");
+                        progress.setVisible(false);
+                        
+                        // Reset table to no content
+                            // Would need to initialize the columns as class objects cus they are unreachable from here right now.
+                    }
+                    
+                }
+                @Override
+                protected void cancelled(){
+                    albumLabel.setText("Error");
+                    artistLabel.setText("Searching failed.");
+                    progress.setVisible(false); 
+                }
+            });
             
             progressExecutor.submit(new Task<Void>(){
                 @Override
