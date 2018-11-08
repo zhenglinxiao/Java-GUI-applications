@@ -94,13 +94,14 @@ public class FXMLDocumentController implements Initializable {
     @FXML
     private void onEnter(KeyEvent ke){
         if(ke.getCode().equals(KeyCode.ENTER) && searchField.isFocused()){
+            currentAlbumIndex = 0;
             // Search artist
             progress.setVisible(true);
             progress.setProgress(-1.0d);
             
-            firstAlbumExecutor.submit(new Task<Void>(){
+            progressExecutor.submit(new Task<Void>(){
                 @Override
-                protected Void call() throws Exception {
+                protected Void call() throws Exception{
                     searchFirstAlbumFromArtist(searchField.getText());
                     return null;
                 }
@@ -109,53 +110,40 @@ public class FXMLDocumentController implements Initializable {
                 protected void succeeded(){
                     try{
                         displayAlbum(currentAlbumIndex);
+                        progress.setProgress(0.5d);
                     }
                     catch(Exception e){
-                        artistLabel.setText("Error!");
+                        artistLabel.setText("Error");
                         albumLabel.setText("Invalid artist.");
                         progress.setVisible(false);
-                        
                         // Reset table to no content
-                            // Would need to initialize the columns as class objects cus they are unreachable from here right now.
                     }
-                    
                 }
+                
                 @Override
                 protected void cancelled(){
                     albumLabel.setText("Error");
                     artistLabel.setText("Searching failed.");
-                    progress.setVisible(false); 
+                    progress.setVisible(false);                     
                 }
             });
             
-            progressExecutor.submit(new Task<Void>(){
+            firstAlbumExecutor.submit(new Task<Void> () {
                 @Override
-                protected Void call() throws Exception {
-                    searchAlbumsFromArtist(searchField.getText());// find first album
+                protected Void call() throws Exception{
+                    searchAlbumsFromArtist(searchField.getText());
                     return null;
                 }
+                
                 @Override
                 protected void succeeded(){
-                    try{
-                        displayAlbum(currentAlbumIndex);
-                        progress.setProgress(1d);
-                    }
-                    catch(Exception e){
-                        artistLabel.setText("Error!");
-                        albumLabel.setText("Invalid artist.");
-                        progress.setVisible(false);
-                        
-                        // Reset table to no content
-                            // Would need to initialize the columns as class objects cus they are unreachable from here right now.
-                        
-                    }
-                    
+//                    displayAlbum(currentAlbumIndex);
+                    progress.setProgress(1d);
                 }
+                
                 @Override
                 protected void cancelled(){
-                    albumLabel.setText("Error");
-                    artistLabel.setText("Searching failed.");
-                    progress.setVisible(false); 
+                    artistLabel.setText(":(");
                 }
             });
             
@@ -228,6 +216,7 @@ public class FXMLDocumentController implements Initializable {
         }
     }   
     
+    // for some reason the tracks don't play for 6lack
     private void displayAlbum(int albumNumber)
     {   
         // Display Tracks for the album passed as parameter
@@ -275,15 +264,12 @@ public class FXMLDocumentController implements Initializable {
     {
         // TODO - Make sure this is not blocking the UI
         
-        currentAlbumIndex = 0;
-        try{
-            String artistId = SpotifyController.getArtistId(artistName);
-            albums = SpotifyController.getAlbumDataFromArtist(artistId);   
-        }
-        catch(Exception e){
-            artistLabel.setText("Error!");
-            albumLabel.setText("Invalid artist.");
-        }
+        // The thread call takes care of the exception
+        String artistId = SpotifyController.getArtistId(artistName);
+        albums = SpotifyController.getAlbumDataFromArtist(artistId);  
+        if(albums.size() > 1){
+            nextAlbumButton.setDisable(false);               
+        }            
        
     }
     
@@ -294,7 +280,7 @@ public class FXMLDocumentController implements Initializable {
         currentAlbumIndex = 0;
         try{
             String artistId = SpotifyController.getArtistId(artistName);
-            albums = SpotifyController.getFirstAlbumDataFromArtist(artistId);   
+            albums = SpotifyController.getFirstAlbumDataFromArtist(artistId);  
         }
         catch(Exception e){
             artistLabel.setText("Error!");
