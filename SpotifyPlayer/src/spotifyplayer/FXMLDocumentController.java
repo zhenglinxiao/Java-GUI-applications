@@ -1,7 +1,8 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+Slider goes back to start when switching albums (when music plays)
+Some songs don't play (6lack)
+Duration counter
+Play button?
  */
 package spotifyplayer;
 
@@ -71,7 +72,7 @@ public class FXMLDocumentController implements Initializable {
     // Other Fields...
     ScheduledExecutorService sliderExecutor = null;
     ScheduledExecutorService progressExecutor = null;
-    ScheduledExecutorService firstAlbumExecutor = null;
+    ScheduledExecutorService searchAlbumsExecutor = null;
     MediaPlayer mediaPlayer = null;
     boolean isSliderAnimationActive = false;
     Button lastPlayButtonPressed = null;
@@ -82,9 +83,9 @@ public class FXMLDocumentController implements Initializable {
     
     public void shutdown(){
         if(sliderExecutor != null){
-            if(progressExecutor != null || firstAlbumExecutor != null){
+            if(progressExecutor != null || searchAlbumsExecutor != null){
                 progressExecutor.shutdown(); 
-                firstAlbumExecutor.shutdown();
+                searchAlbumsExecutor.shutdown();
             }
             sliderExecutor.shutdown();
         }
@@ -116,7 +117,8 @@ public class FXMLDocumentController implements Initializable {
                         artistLabel.setText("Error");
                         albumLabel.setText("Invalid artist.");
                         progress.setVisible(false);
-                        // Reset table to no content
+                        albumCover.setImage(new Image("file:error.png"));
+                        tracksTableView.setItems(new ObservableListWrapper(new ArrayList()));
                     }
                 }
                 
@@ -124,11 +126,13 @@ public class FXMLDocumentController implements Initializable {
                 protected void cancelled(){
                     albumLabel.setText("Error");
                     artistLabel.setText("Searching failed.");
+                    albumCover.setImage(new Image("file:error.png"));
+                    tracksTableView.setItems(new ObservableListWrapper(new ArrayList()));
                     progress.setVisible(false);                     
                 }
             });
             
-            firstAlbumExecutor.submit(new Task<Void> () {
+            searchAlbumsExecutor.submit(new Task<Void> () {
                 @Override
                 protected Void call() throws Exception{
                     searchAlbumsFromArtist(searchField.getText());
@@ -137,13 +141,16 @@ public class FXMLDocumentController implements Initializable {
                 
                 @Override
                 protected void succeeded(){
-//                    displayAlbum(currentAlbumIndex);
                     progress.setProgress(1d);
                 }
                 
                 @Override
                 protected void cancelled(){
-                    artistLabel.setText(":(");
+                    albumLabel.setText("Error");
+                    artistLabel.setText("Searching failed.");
+                    albumCover.setImage(new Image("file:error.png"));
+                    tracksTableView.setItems(new ObservableListWrapper(new ArrayList()));
+                    progress.setVisible(false);  
                 }
             });
             
@@ -212,11 +219,13 @@ public class FXMLDocumentController implements Initializable {
             }
         }
         catch(Exception e){
-            System.out.println("Error playing/pausing song...");
+            albumLabel.setText("Error");
+            artistLabel.setText("Song playback failed.");
+            albumCover.setImage(new Image("file:error.png"));
+            tracksTableView.setItems(new ObservableListWrapper(new ArrayList()));            
         }
     }   
     
-    // for some reason the tracks don't play for 6lack
     private void displayAlbum(int albumNumber)
     {   
         // Display Tracks for the album passed as parameter
@@ -227,6 +236,7 @@ public class FXMLDocumentController implements Initializable {
             artistLabel.setText(album.getArtistName());
             albumLabel.setText(album.getAlbumName());
             albumCover.setImage(new Image(album.getImageURL()));
+            
             if(albums.size() > 1){
                 if(albumNumber == albums.size() - 1){
                     nextAlbumButton.setDisable(true);
@@ -280,11 +290,14 @@ public class FXMLDocumentController implements Initializable {
         currentAlbumIndex = 0;
         try{
             String artistId = SpotifyController.getArtistId(artistName);
-            albums = SpotifyController.getFirstAlbumDataFromArtist(artistId);  
+            albums = SpotifyController.getFirstAlbumDataFromArtist(artistId); 
+            nextAlbumButton.setDisable(true);
         }
         catch(Exception e){
-            artistLabel.setText("Error!");
-            albumLabel.setText("Invalid artist.");
+            albumLabel.setText("Error");
+            artistLabel.setText("Invalid artist.");
+            albumCover.setImage(new Image("file:error.png"));
+            tracksTableView.setItems(new ObservableListWrapper(new ArrayList()));            
         }
        
     }
@@ -373,7 +386,7 @@ public class FXMLDocumentController implements Initializable {
             }
         }, 1, 1, TimeUnit.SECONDS);
         
-        firstAlbumExecutor = Executors.newSingleThreadScheduledExecutor(); 
+        searchAlbumsExecutor = Executors.newSingleThreadScheduledExecutor(); 
         progressExecutor = Executors.newSingleThreadScheduledExecutor();    
     }        
 }
