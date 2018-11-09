@@ -166,12 +166,12 @@ public class FXMLDocumentController implements Initializable {
       
     private void startMusic(String url) throws Exception{ 
         lastPlayButtonPressed.setText("Pause");
-        trackSlider.setDisable(false);
         
         if(mediaPlayer != null){
             stopMusic();
         }
         
+        trackSlider.setDisable(false);
         genPlayButton.setDisable(false);
         genPlayButton.setText("Pause");
         
@@ -189,7 +189,9 @@ public class FXMLDocumentController implements Initializable {
                 isSliderAnimationActive = false;
                 trackSlider.setValue(0);
                 stopMusic();
-                lastPlayButtonPressed.setText("Play");
+                if(lastPlayButtonPressed != null){
+                    lastPlayButtonPressed.setText("Play");
+                }
             });
         });
     }
@@ -200,6 +202,7 @@ public class FXMLDocumentController implements Initializable {
             mediaPlayer.dispose();
             songTimeLabel.setText("0:00");
             genPlayButton.setText("Play");
+            trackSlider.setDisable(true);
             genPlayButton.setDisable(true);
         }
     }
@@ -303,6 +306,7 @@ public class FXMLDocumentController implements Initializable {
         try{
             String artistId = SpotifyController.getArtistId(artistName);
             albums = SpotifyController.getFirstAlbumDataFromArtist(artistId); 
+            previousAlbumButton.setDisable(true);
             nextAlbumButton.setDisable(true);
         }
         catch(Exception e){
@@ -354,6 +358,9 @@ public class FXMLDocumentController implements Initializable {
                                     catch(Exception e){
                                         artistLabel.setText("Error");
                                         albumLabel.setText("Preview unavailable.");
+                                        genPlayButton.setDisable(true);
+                                        genPlayButton.setText("Play");
+                                        trackSlider.setDisable(true);
                                     }
                                 }
                             });
@@ -428,5 +435,6 @@ public class FXMLDocumentController implements Initializable {
         searchAlbumsExecutor = Executors.newSingleThreadScheduledExecutor(); 
         progressExecutor = Executors.newSingleThreadScheduledExecutor(); 
         genPlayButton.setDisable(true);
+        trackSlider.setDisable(true);
     }        
 }
