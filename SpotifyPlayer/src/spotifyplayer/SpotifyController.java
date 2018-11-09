@@ -155,6 +155,7 @@ public class SpotifyController{
                 String endpoint = "https://api.spotify.com/v1/albums/" + albumId;
 //                String params = "/search?market=CA"; //?? filter in finding album ids? or filter the songs?
                 String jsonOutput = spotifyEndpointToJson(endpoint, "");
+//                System.out.println(jsonOutput);
                 
                 JsonObject albumJson = new JsonParser().parse(jsonOutput).getAsJsonObject();
                 

@@ -1,7 +1,10 @@
 /*
+DONE Catch exception when preview is unavailable (ex. 6lack)
 Slider goes back to start when switching albums (when music plays)
-Some songs don't play (6lack)
-Duration counter
+Pause button stays when switching artists
+In SpotifyController: filter for canadian market (album data)
+No connection exception
+Duration counter: when sliding slider tho
 Play button?
  */
 package spotifyplayer;
@@ -167,7 +170,7 @@ public class FXMLDocumentController implements Initializable {
         displayAlbum(--currentAlbumIndex);
     }
     
-    private void startMusic(String url){ 
+    private void startMusic(String url) throws Exception{ 
         lastPlayButtonPressed.setText("Pause");
         trackSlider.setDisable(false);
         
@@ -188,6 +191,8 @@ public class FXMLDocumentController implements Initializable {
                 
                 isSliderAnimationActive = false;
                 trackSlider.setValue(0);
+                stopMusic();
+                lastPlayButtonPressed.setText("Play");
             });
         });
     }
@@ -293,7 +298,7 @@ public class FXMLDocumentController implements Initializable {
             albums = SpotifyController.getFirstAlbumDataFromArtist(artistId); 
             nextAlbumButton.setDisable(true);
         }
-        catch(Exception e){
+        catch(Exception e){ // is this necessary?
             albumLabel.setText("Error");
             artistLabel.setText("Invalid artist.");
             albumCover.setImage(new Image("file:error.png"));
@@ -336,7 +341,13 @@ public class FXMLDocumentController implements Initializable {
                                         lastPlayButtonPressed.setText("Play");
                                     }
                                     lastPlayButtonPressed = playButton;
-                                    startMusic(item);
+                                    try{
+                                        startMusic(item);
+                                    }
+                                    catch(Exception e){
+                                        artistLabel.setText("Error");
+                                        albumLabel.setText("Preview unavailable.");
+                                    }
                                 }
                             });
                             
@@ -380,6 +391,19 @@ public class FXMLDocumentController implements Initializable {
                         // Move slider
                         if(isSliderAnimationActive){
                             trackSlider.setValue(trackSlider.getValue() + 1.0);
+
+                            int length = (int)trackSlider.getMax();
+                            int lengthMin = length/60;
+                            int lengthSec = length%60;
+                            songLengthLabel.setText(String.format("/ " + lengthMin + ":%02d", lengthSec));
+                            
+                            int time = 0;
+                            time += (int)(trackSlider.getValue());
+                            
+                            int min = time/60;
+                            int sec = time%60;
+                            
+                            songTimeLabel.setText(String.format(min + ":%02d", sec)); 
                         }
                     }
                 });
