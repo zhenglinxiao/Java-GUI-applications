@@ -35,13 +35,14 @@ public class SpotifyController{
             JsonObject artist = root.get("artists").getAsJsonObject();
             JsonArray items = artist.get("items").getAsJsonArray();
             
+            // If artist does not exist
             if(items.size() == 0){
                 return null;
             }
             
             JsonObject items2 = items.get(0).getAsJsonObject();
 
-            artistId = items2.get("id").toString().replaceAll("\"", "");
+            artistId = items2.get("id").getAsString();
         }
         catch(Exception e)
         {
@@ -69,14 +70,26 @@ public class SpotifyController{
             
             String endpoint = "https://api.spotify.com/v1/artists/" + artistId + "/albums";
             String jsonOutput = spotifyEndpointToJson(endpoint, "");
+            System.out.println(jsonOutput);
             JsonObject albums = new JsonParser().parse(jsonOutput).getAsJsonObject();
             JsonArray items = albums.get("items").getAsJsonArray();
 
             for (int i = 0; i < items.size() ; i++) {
+                
+                if(i == 50)break;
+                
                 JsonObject currentAlbum = items.get(i).getAsJsonObject();
-                String id = currentAlbum.get("id").toString().replaceAll("\"", "");
-
-                albumIds.add(id);
+                
+                JsonArray marketsList = currentAlbum.get("available_markets").getAsJsonArray();
+                ArrayList<String> markets = new ArrayList<>();
+                for(JsonElement e: marketsList){
+                    markets.add(e.getAsString());
+                }
+                
+                if(markets.contains("CA")){
+                    String id = currentAlbum.get("id").getAsString();
+                    albumIds.add(id);
+                }
             }
         
         }
@@ -109,8 +122,8 @@ public class SpotifyController{
             JsonArray items = albums.get("items").getAsJsonArray();
 
             
-            JsonObject currentAlbum = items.get(0).getAsJsonObject();
-            id = currentAlbum.get("id").toString().replaceAll("\"", "");
+            JsonObject firstAlbum = items.get(0).getAsJsonObject();
+            id = firstAlbum.get("id").getAsString();
         }
         catch(Exception e)
         {
@@ -162,15 +175,15 @@ public class SpotifyController{
                 // Artist Name
                 JsonArray artists = albumJson.get("artists").getAsJsonArray();
                 JsonObject artist = artists.get(0).getAsJsonObject();
-                String artistName = artist.get("name").toString().replaceAll("\"", "");
+                String artistName = artist.get("name").getAsString();
 
                 // Album Name
-                String albumName = albumJson.get("name").toString().replaceAll("\"", "");
+                String albumName = albumJson.get("name").getAsString();
                 
                 // Cover image
                 JsonArray images = albumJson.getAsJsonArray("images");
                 JsonObject bigCover = images.get(0).getAsJsonObject();
-                String coverURL = bigCover.get("url").toString().replaceAll("\"", "");
+                String coverURL = bigCover.get("url").getAsString();
 
                 // Album tracks
                     //int trackNumber = albumJson.get("total_tracks").getAsInt();
@@ -181,9 +194,9 @@ public class SpotifyController{
                 for (int i = 0; i < tracks.size(); i++) {
                     JsonObject trackInfo = tracks.get(i).getAsJsonObject();
                     int trackNumber = trackInfo.get("track_number").getAsInt();
-                    String trackTitle = trackInfo.get("name").toString().replaceAll("\"", "");
+                    String trackTitle = trackInfo.get("name").getAsString();
                     int trackDuration = trackInfo.get("duration_ms").getAsInt();
-                    String trackUrl = trackInfo.get("preview_url").toString().replaceAll("\"", ""); // only the preview
+                    String trackUrl = trackInfo.get("preview_url").getAsString(); 
                     
                     albumTracks.add(new Track(trackNumber, trackTitle, trackDuration, trackUrl));
                 }
@@ -205,7 +218,7 @@ public class SpotifyController{
             return null;
         }
         
-        String albumId = getFirstAlbumIdFromArtist(artistId);
+        String firstAlbumId = getFirstAlbumIdFromArtist(artistId);
         ArrayList<Album> albums = new ArrayList<>();
         
 
@@ -230,7 +243,7 @@ public class SpotifyController{
                 //        previewUrl = item.get("preview_url").getAsString();
                 //    }
                 
-                String endpoint = "https://api.spotify.com/v1/albums/" + albumId;
+                String endpoint = "https://api.spotify.com/v1/albums/" + firstAlbumId;
 //                String params = "/search?market=CA"; //?? filter in finding album ids? or filter the songs?
                 String jsonOutput = spotifyEndpointToJson(endpoint, "");
                 
@@ -239,15 +252,15 @@ public class SpotifyController{
                 // Artist Name
                 JsonArray artists = albumJson.get("artists").getAsJsonArray();
                 JsonObject artist = artists.get(0).getAsJsonObject();
-                String artistName = artist.get("name").toString().replaceAll("\"", "");
+                String artistName = artist.get("name").getAsString();
 
                 // Album Name
-                String albumName = albumJson.get("name").toString().replaceAll("\"", "");
+                String albumName = albumJson.get("name").getAsString();
                 
                 // Cover image
                 JsonArray images = albumJson.getAsJsonArray("images");
                 JsonObject bigCover = images.get(0).getAsJsonObject();
-                String coverURL = bigCover.get("url").toString().replaceAll("\"", "");
+                String coverURL = bigCover.get("url").getAsString();
 
                 // Album tracks
                     //int trackNumber = albumJson.get("total_tracks").getAsInt();
@@ -258,9 +271,9 @@ public class SpotifyController{
                 for (int i = 0; i < tracks.size(); i++) {
                     JsonObject trackInfo = tracks.get(i).getAsJsonObject();
                     int trackNumber = trackInfo.get("track_number").getAsInt();
-                    String trackTitle = trackInfo.get("name").toString().replaceAll("\"", "");
+                    String trackTitle = trackInfo.get("name").getAsString();
                     int trackDuration = trackInfo.get("duration_ms").getAsInt();
-                    String trackUrl = trackInfo.get("preview_url").toString().replaceAll("\"", ""); // only the preview
+                    String trackUrl = trackInfo.get("preview_url").getAsString(); 
                     
                     albumTracks.add(new Track(trackNumber, trackTitle, trackDuration, trackUrl));
                 }
