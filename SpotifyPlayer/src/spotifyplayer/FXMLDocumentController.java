@@ -114,7 +114,7 @@ public class FXMLDocumentController implements Initializable {
                         artistLabel.setText("Error");
                         albumLabel.setText("Invalid artist.");
                         progress.setVisible(false);
-                        albumCover.setImage(new Image("file:error.png"));
+                        albumCover.setImage(new Image("file:error.png")); // what kind of path is this?
                         tracksTableView.setItems(new ObservableListWrapper(new ArrayList()));
                     }
                 }
@@ -166,6 +166,8 @@ public class FXMLDocumentController implements Initializable {
       
     private void startMusic(String url) throws Exception{ 
         lastPlayButtonPressed.setText("Pause");
+        
+        // If a song is already playing, stop it and play a new song
         
         if(mediaPlayer != null){
             stopMusic();
@@ -235,7 +237,13 @@ public class FXMLDocumentController implements Initializable {
         }
         catch(Exception e){
             artistLabel.setText("Error");
-            albumLabel.setText("Song playback failed.");            
+            albumLabel.setText("Song playback failed.");
+            genPlayButton.setDisable(true);
+            trackSlider.setDisable(true);
+            genPlayButton.setText("Play");
+            trackSlider.setValue(0.0f);
+            songTimeLabel.setText("0:00");
+            songLengthLabel.setText("0:00");
         }
     }   
     
@@ -302,7 +310,6 @@ public class FXMLDocumentController implements Initializable {
     {
         // TODO - Make sure this is not blocking the UI
         
-        currentAlbumIndex = 0;
         try{
             String artistId = SpotifyController.getArtistId(artistName);
             albums = SpotifyController.getFirstAlbumDataFromArtist(artistId); 
@@ -436,5 +443,12 @@ public class FXMLDocumentController implements Initializable {
         progressExecutor = Executors.newSingleThreadScheduledExecutor(); 
         genPlayButton.setDisable(true);
         trackSlider.setDisable(true);
+        Platform.runLater(new Runnable(){
+            @Override
+            public void run(){
+                searchField.requestFocus();
+            }
+        });
+        
     }        
 }
