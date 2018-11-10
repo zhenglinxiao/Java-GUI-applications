@@ -1,6 +1,13 @@
-/*
-In SpotifyController: filter for canadian market (album data)
- */
+/*------------------------------------------------------------------------------
+
+SPOTIFY PLAYER
+
+Programmers: Jose Fernandez & Lin Xiao Zheng
+Date: November 11, 2018
+
+------------------------------------------------------------------------------*/
+
+
 package spotifyplayer;
 
 import com.sun.javafx.collections.ObservableListWrapper;
@@ -73,7 +80,6 @@ public class FXMLDocumentController implements Initializable {
     MediaPlayer mediaPlayer = null;
     boolean isSliderAnimationActive = false;
     Button lastPlayButtonPressed = null;
-    
     ArrayList<Album> albums = null;
     int currentAlbumIndex = 0;
     
@@ -89,10 +95,19 @@ public class FXMLDocumentController implements Initializable {
         Platform.exit();
     }
     
+    // Not perfect
+//    @FXML
+//    private void onSpaceBar(KeyEvent ke){
+//        if(ke.getCode().equals(KeyCode.SPACE)){
+//            playPauseMusic();
+//        }
+//    }    
+    
     @FXML
     private void onEnter(KeyEvent ke){
-        if(ke.getCode().equals(KeyCode.ENTER) && searchField.isFocused()){
+        if(ke.getCode().equals(KeyCode.ENTER) && searchField.isFocused() && !searchField.getText().equals("")){
             currentAlbumIndex = 0;
+            
             // Search artist
             progress.setVisible(true);
             progress.setProgress(-1.0d);
@@ -117,6 +132,29 @@ public class FXMLDocumentController implements Initializable {
                         albumCover.setImage(new Image("file:error.png")); // what kind of path is this?
                         tracksTableView.setItems(new ObservableListWrapper(new ArrayList()));
                     }
+                    
+                    // Search other albums
+                    searchAlbumsExecutor.submit(new Task<Void> () {
+                        @Override
+                        protected Void call() throws Exception{
+                            searchAlbumsFromArtist(searchField.getText());
+                            return null;
+                        }
+
+                        @Override
+                        protected void succeeded(){
+                            progress.setProgress(1d);
+                        }
+
+                        @Override
+                        protected void cancelled(){
+                            albumLabel.setText("Error");
+                            artistLabel.setText("Searching failed.");
+                            albumCover.setImage(new Image("file:error.png"));
+                            tracksTableView.setItems(new ObservableListWrapper(new ArrayList()));
+                            progress.setVisible(false);  
+                        }
+                    });                    
                 }
                 
                 @Override
@@ -128,29 +166,6 @@ public class FXMLDocumentController implements Initializable {
                     progress.setVisible(false);                     
                 }
             });
-            
-            searchAlbumsExecutor.submit(new Task<Void> () {
-                @Override
-                protected Void call() throws Exception{
-                    searchAlbumsFromArtist(searchField.getText());
-                    return null;
-                }
-                
-                @Override
-                protected void succeeded(){
-                    progress.setProgress(1d);
-                }
-                
-                @Override
-                protected void cancelled(){
-                    albumLabel.setText("Error");
-                    artistLabel.setText("Searching failed.");
-                    albumCover.setImage(new Image("file:error.png"));
-                    tracksTableView.setItems(new ObservableListWrapper(new ArrayList()));
-                    progress.setVisible(false);  
-                }
-            });
-            
         }
     }
     
@@ -164,11 +179,10 @@ public class FXMLDocumentController implements Initializable {
         displayAlbum(--currentAlbumIndex);
     }
       
-    private void startMusic(String url) throws Exception{ 
+    private void startMusic(String url){ 
         lastPlayButtonPressed.setText("Pause");
         
-        // If a song is already playing, stop it and play a new song
-        
+        // If a song is already playing, stop it and play the new song
         if(mediaPlayer != null){
             stopMusic();
         }
@@ -207,6 +221,7 @@ public class FXMLDocumentController implements Initializable {
             trackSlider.setDisable(true);
             genPlayButton.setDisable(true);
         }
+        mediaPlayer = null;
     }
     
     @FXML
@@ -245,7 +260,7 @@ public class FXMLDocumentController implements Initializable {
             songTimeLabel.setText("0:00");
             songLengthLabel.setText("0:00");
         }
-    }   
+    }
     
     private void displayAlbum(int albumNumber)
     {   
@@ -295,21 +310,17 @@ public class FXMLDocumentController implements Initializable {
     
     private void searchAlbumsFromArtist(String artistName)
     {
-        // TODO - Make sure this is not blocking the UI
-        
         // The thread call takes care of the exception
         String artistId = SpotifyController.getArtistId(artistName);
         albums = SpotifyController.getAlbumDataFromArtist(artistId);  
         if(albums.size() > 1){
             nextAlbumButton.setDisable(false);               
-        }            
+        }       
        
     }
     
      private void searchFirstAlbumFromArtist(String artistName)
     {
-        // TODO - Make sure this is not blocking the UI
-        
         try{
             String artistId = SpotifyController.getArtistId(artistName);
             albums = SpotifyController.getFirstAlbumDataFromArtist(artistId); 
@@ -359,16 +370,7 @@ public class FXMLDocumentController implements Initializable {
                                         lastPlayButtonPressed.setText("Play");
                                     }
                                     lastPlayButtonPressed = playButton;
-                                    try{
-                                        startMusic(item);
-                                    }
-                                    catch(Exception e){
-                                        artistLabel.setText("Error");
-                                        albumLabel.setText("Preview unavailable.");
-                                        genPlayButton.setDisable(true);
-                                        genPlayButton.setText("Play");
-                                        trackSlider.setDisable(true);
-                                    }
+                                    startMusic(item);
                                 }
                             });
                             
@@ -388,7 +390,6 @@ public class FXMLDocumentController implements Initializable {
         playColumn.setCellFactory(cellFactory);
         tracksTableView.getColumns().setAll(trackNumberColumn, trackTitleColumn, playColumn);
 
-        // When slider is released, we must seek in the song
         trackSlider.setOnMouseReleased(new EventHandler() {
             @Override
             public void handle(Event event) {

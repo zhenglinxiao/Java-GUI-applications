@@ -37,7 +37,7 @@
       <TextField fx:id="searchField" layoutX="307.0" layoutY="117.0" onKeyPressed="#onEnter" prefHeight="25.0" prefWidth="283.0" promptText="Search for artist..." />
       <Button fx:id="previousAlbumButton" disable="true" layoutX="278.0" layoutY="117.0" mnemonicParsing="false" onAction="#previousAlbum" prefHeight="25.0" prefWidth="25.0" text="&lt;" />
       <Button fx:id="nextAlbumButton" disable="true" layoutX="593.0" layoutY="117.0" mnemonicParsing="false" onAction="#nextAlbum" prefHeight="25.0" prefWidth="25.0" text="&gt;" />
-      <Button fx:id="genPlayButton" layoutX="14.0" layoutY="386.0" mnemonicParsing="false" onAction="#playPauseMusic" prefHeight="25.0" prefWidth="52.0" text="Play" />
+      <Button fx:id="genPlayButton" layoutX="14.0" layoutY="386.0" mnemonicParsing="false" onAction="#playPauseMusic" onKeyPressed="#onSpaceBar" prefHeight="25.0" prefWidth="52.0" text="Play" />
       <Label fx:id="songTimeLabel" alignment="CENTER_RIGHT" layoutX="536.0" layoutY="391.0" prefHeight="17.0" prefWidth="30.0" text="0:00" />
       <Label fx:id="songLengthLabel" layoutX="571.0" layoutY="391.0" prefHeight="17.0" prefWidth="45.0" text="/ 0:00" />
     </children>
