@@ -1,1 +1,2 @@
-# Java-GUI-projects
+# Java GUI Projects
+Class projects
